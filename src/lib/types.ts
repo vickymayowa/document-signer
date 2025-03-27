@@ -1,33 +1,30 @@
-export type AnnotationType =
-  | "highlight"
-  | "underline"
-  | "comment"
-  | "signature";
+export type AnnotationType = "highlight" | "underline" | "comment" | "signature"
 
 export interface Annotation {
-  id: number;
-  type: AnnotationType;
-  page: number;
+  id: number
+  type: AnnotationType
+  page: number
   position: {
-    x: number;
-    y: number;
-  };
-  color?: string;
-  data?: string;
+    x: number
+    y: number
+  }
+  color?: string
+  data?: string
   boundingRect?: {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-  };
-  createdAt: string;
+    x: number
+    y: number
+    width: number
+    height: number
+  }
+  createdAt: string
 }
 
 export interface DocumentMetadata {
-  title?: string;
-  author?: string;
-  creationDate?: string;
-  pageCount?: number;
-  keywords?: string[];
-  subject?: string;
+  title?: string
+  author?: string
+  creationDate?: string
+  pageCount?: number
+  keywords?: string[]
+  subject?: string
 }
+
