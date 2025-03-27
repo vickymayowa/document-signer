@@ -1,103 +1,251 @@
-import Image from "next/image";
+"use client"
 
-export default function Home() {
+import { useState, useEffect } from "react"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Card } from "@/components/ui/card"
+import DocumentUploader from "@/components/document-uploader"
+import DocumentViewer from "@/components/document-viewer"
+import AnnotationToolbar from "@/components/annotation-toolbar"
+import DocumentHeader from "@/components/document-header"
+import type { AnnotationType, Annotation, DocumentMetadata } from "@/lib/types"
+import { useToast } from "@/hooks/use-toast"
+import { Loader2 } from "lucide-react"
+import { cn } from "@/lib/utils"
+import { useHotkeys } from "react-hotkeys-hook"
+
+export default function DocumentSignerPage() {
+  const [file, setFile] = useState<File | null>(null)
+  const [currentTool, setCurrentTool] = useState<AnnotationType>("highlight")
+  const [currentColor, setCurrentColor] = useState<string>("#FFEB3B")
+  const [annotations, setAnnotations] = useState<Annotation[]>([])
+  const [numPages, setNumPages] = useState<number>(0)
+  const [currentPage, setCurrentPage] = useState<number>(1)
+  const [isExporting, setIsExporting] = useState<boolean>(false)
+  const [documentMetadata, setDocumentMetadata] = useState<DocumentMetadata | null>(null)
+  const [activeTab, setActiveTab] = useState<string>("upload")
+  const [zoomLevel, setZoomLevel] = useState<number>(1.0)
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(false)
+  const { toast } = useToast()
+
+  // Set up keyboard shortcuts
+  useHotkeys("h", () => setCurrentTool("highlight"), { enableOnFormTags: true })
+  useHotkeys("u", () => setCurrentTool("underline"), { enableOnFormTags: true })
+  useHotkeys("c", () => setCurrentTool("comment"), { enableOnFormTags: true })
+  useHotkeys("s", () => setCurrentTool("signature"), { enableOnFormTags: true })
+  useHotkeys("left", () => handlePageChange(Math.max(1, currentPage - 1)), { enableOnFormTags: true })
+  useHotkeys("right", () => handlePageChange(Math.min(numPages, currentPage + 1)), { enableOnFormTags: true })
+  useHotkeys("ctrl+z", handleUndo, { enableOnFormTags: true })
+  useHotkeys("ctrl+=", () => setZoomLevel((prev) => Math.min(prev + 0.1, 2.0)), { enableOnFormTags: true })
+  useHotkeys("ctrl+-", () => setZoomLevel((prev) => Math.max(prev - 0.1, 0.5)), { enableOnFormTags: true })
+  useHotkeys("f", toggleFullscreen, { enableOnFormTags: true })
+
+  useEffect(() => {
+    const handleEsc = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsFullscreen(false)
+      }
+    }
+    window.addEventListener("keydown", handleEsc)
+    return () => {
+      window.removeEventListener("keydown", handleEsc)
+    }
+  }, [])
+
+  function toggleFullscreen() {
+    setIsFullscreen(!isFullscreen)
+  }
+
+  function handleFileChange(file: File | null, metadata?: DocumentMetadata) {
+    setFile(file)
+    setAnnotations([])
+    setCurrentPage(1)
+    setDocumentMetadata(metadata || null)
+
+    if (file) {
+      setActiveTab("annotate")
+      toast({
+        title: "Document loaded successfully",
+        description: `${file.name} is ready for annotation.`,
+      })
+    }
+  }
+
+  function handleToolChange(tool: AnnotationType) {
+    setCurrentTool(tool)
+    toast({
+      title: `${tool.charAt(0).toUpperCase() + tool.slice(1)} tool selected`,
+      description: getToolDescription(tool),
+      duration: 2000,
+    })
+  }
+
+  function getToolDescription(tool: AnnotationType): string {
+    switch (tool) {
+      case "highlight":
+        return "Click and drag to highlight text"
+      case "underline":
+        return "Click and drag to underline text"
+      case "comment":
+        return "Click anywhere to add a comment"
+      case "signature":
+        return "Click anywhere to place your signature"
+      default:
+        return ""
+    }
+  }
+
+  function handleColorChange(color: string) {
+    setCurrentColor(color)
+  }
+
+  function handleAddAnnotation(annotation: Partial<Annotation>) {
+    const newAnnotation: Annotation = {
+      id: Date.now(),
+      type: currentTool,
+      page: currentPage,
+      position: annotation.position || { x: 0, y: 0 },
+      color: currentColor,
+      data: annotation.data || "",
+      createdAt: new Date().toISOString(),
+    }
+
+    setAnnotations((prev) => [...prev, newAnnotation])
+
+    toast({
+      title: "Annotation added",
+      description: `${currentTool.charAt(0).toUpperCase() + currentTool.slice(1)} annotation added to page ${currentPage}.`,
+      duration: 2000,
+    })
+  }
+
+  function handleDeleteAnnotation(id: number) {
+    setAnnotations((prev) => prev.filter((a) => a.id !== id))
+
+    toast({
+      title: "Annotation deleted",
+      description: "The annotation has been removed.",
+    })
+  }
+
+  function handleUndo() {
+    setAnnotations((prev) => {
+      const currentPageAnnotations = prev.filter((a) => a.page === currentPage)
+      if (currentPageAnnotations.length === 0) return prev
+
+      const lastAnnotation = currentPageAnnotations[currentPageAnnotations.length - 1]
+      return prev.filter((a) => a.id !== lastAnnotation.id)
+    })
+
+    toast({
+      title: "Undo",
+      description: "Last annotation has been removed.",
+      duration: 2000,
+    })
+  }
+
+  function handlePageChange(page: number) {
+    setCurrentPage(page)
+  }
+
+  async function handleExport() {
+    setIsExporting(true)
+
+    // Simulate export process
+    await new Promise((resolve) => setTimeout(resolve, 2000))
+
+    setIsExporting(false)
+
+    toast({
+      title: "Document exported successfully",
+      description: "Your annotated document has been downloaded.",
+    })
+  }
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <main
+      className={cn(
+        "transition-all duration-300 ease-in-out",
+        isFullscreen ? "fixed inset-0 z-50 bg-background" : "container mx-auto p-4 max-w-7xl",
+      )}
+    >
+      <DocumentHeader
+        file={file}
+        documentMetadata={documentMetadata}
+        isFullscreen={isFullscreen}
+        onToggleFullscreen={toggleFullscreen}
+      />
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2 mb-8">
+          <TabsTrigger value="upload">Upload Document</TabsTrigger>
+          <TabsTrigger value="annotate" disabled={!file}>
+            Annotate Document
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="upload" className="mt-0">
+          <Card>
+            <DocumentUploader onFileChange={handleFileChange} />
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="annotate" className="mt-0">
+          {file && (
+            <div className="grid grid-cols-1 lg:grid-cols-[auto_1fr] gap-4">
+              <AnnotationToolbar
+                currentTool={currentTool}
+                currentColor={currentColor}
+                onToolChange={handleToolChange}
+                onColorChange={handleColorChange}
+                onExport={handleExport}
+                currentPage={currentPage}
+                numPages={numPages}
+                onPageChange={handlePageChange}
+                isExporting={isExporting}
+                onUndo={handleUndo}
+                zoomLevel={zoomLevel}
+                onZoomChange={setZoomLevel}
+                annotations={annotations.filter((a) => a.page === currentPage)}
+                onDeleteAnnotation={handleDeleteAnnotation}
+              />
+
+              <div className="relative flex-1 overflow-auto bg-muted/30 rounded-lg p-4 min-h-[800px] transition-all duration-300">
+                {isExporting && (
+                  <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-10">
+                    <div className="flex flex-col items-center gap-3">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                      <p className="text-lg font-medium">Exporting document...</p>
+                    </div>
+                  </div>
+                )}
+
+                <DocumentViewer
+                  file={file}
+                  currentTool={currentTool}
+                  currentColor={currentColor}
+                  annotations={annotations}
+                  onAddAnnotation={handleAddAnnotation}
+                  onDeleteAnnotation={handleDeleteAnnotation}
+                  currentPage={currentPage}
+                  onPageChange={handlePageChange}
+                  onDocumentLoad={setNumPages}
+                  zoomLevel={zoomLevel}
+                />
+              </div>
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
+
+      {activeTab === "annotate" && file && (
+        <div className="mt-6 text-center text-sm text-muted-foreground">
+          <p>
+            Keyboard shortcuts: (H)ighlight, (U)nderline, (C)omment, (S)ignature, ←→ Navigate pages, Ctrl+Z Undo,
+            Ctrl+/- Zoom, (F) Fullscreen
+          </p>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+      )}
+    </main>
+  )
 }
+
