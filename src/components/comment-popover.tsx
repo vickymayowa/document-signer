@@ -1,34 +1,50 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
-import { Check, X, Bold, Italic } from "lucide-react"
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Check, X, Bold, Italic } from "lucide-react";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 interface CommentPopoverProps {
-  position: { x: number; y: number }
-  onSave: (text: string) => void
-  onCancel: () => void
+  position: { x: number; y: number };
+  onSave: (text: string) => void;
+  onCancel: () => void;
 }
 
-export default function CommentPopover({ position, onSave, onCancel }: CommentPopoverProps) {
-  const [comment, setComment] = useState("")
-  const [isBold, setIsBold] = useState(false)
-  const [isItalic, setIsItalic] = useState(false)
+export default function CommentPopover({
+  position,
+  onSave,
+  onCancel,
+}: CommentPopoverProps) {
+  const [comment, setComment] = useState("");
+  const [isBold, setIsBold] = useState(false);
+  const [isItalic, setIsItalic] = useState(false);
 
   const handleSave = () => {
     if (comment.trim()) {
       // Format the comment with markdown-like syntax if formatting is applied
-      let formattedComment = comment
-      if (isBold) formattedComment = `**${formattedComment}**`
-      if (isItalic) formattedComment = `*${formattedComment}*`
+      let formattedComment = comment;
+      if (isBold) formattedComment = `**${formattedComment}**`;
+      if (isItalic) formattedComment = `*${formattedComment}*`;
 
-      onSave(formattedComment)
+      onSave(formattedComment);
     } else {
-      onCancel()
+      onCancel();
     }
-  }
+  };
+
+  // Handle toggle changes
+  const handleToggleChange = (value: string[]) => {
+    setIsBold(value.includes("bold"));
+    setIsItalic(value.includes("italic"));
+  };
+
+  // Current value for the toggle group
+  const currentValue = [
+    ...(isBold ? ["bold"] : []),
+    ...(isItalic ? ["italic"] : []),
+  ];
 
   return (
     <div
@@ -39,17 +55,17 @@ export default function CommentPopover({ position, onSave, onCancel }: CommentPo
       }}
     >
       <div className="flex items-center gap-1 mb-2">
-        <ToggleGroup type="multiple" variant="outline" className="justify-start">
-          <ToggleGroupItem value="bold" aria-label="Toggle bold" size="sm" pressed={isBold} onPressedChange={setIsBold}>
+        <ToggleGroup
+          type="multiple"
+          variant="outline"
+          className="justify-start"
+          value={currentValue}
+          onValueChange={handleToggleChange}
+        >
+          <ToggleGroupItem value="bold" aria-label="Toggle bold" size="sm">
             <Bold className="h-4 w-4" />
           </ToggleGroupItem>
-          <ToggleGroupItem
-            value="italic"
-            aria-label="Toggle italic"
-            size="sm"
-            pressed={isItalic}
-            onPressedChange={setIsItalic}
-          >
+          <ToggleGroupItem value="italic" aria-label="Toggle italic" size="sm">
             <Italic className="h-4 w-4" />
           </ToggleGroupItem>
         </ToggleGroup>
@@ -74,6 +90,5 @@ export default function CommentPopover({ position, onSave, onCancel }: CommentPo
         </Button>
       </div>
     </div>
-  )
+  );
 }
-
