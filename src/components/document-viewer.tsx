@@ -12,11 +12,12 @@ import TextSelectionHighlighter from "@/components/text-selection-highlighter"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { cn } from "@/lib/utils"
 
+
 // Initialize PDF.js worker
 
 if (!pdfjs.GlobalWorkerOptions.workerSrc) {
   pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-    "pdfjs-dist/build/pdf.worker.min.js",
+    "node_modules/pdfjs-dist/build/pdf.worker.min.js",
     import.meta.url
   ).toString();
 }
