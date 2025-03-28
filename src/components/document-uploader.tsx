@@ -104,6 +104,7 @@ export default function DocumentUploader({
     }
   };
 
+  console.log(error)
   return (
     <CardContent className="pt-6 pb-8">
       {!fileName ? (

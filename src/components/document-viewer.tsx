@@ -13,8 +13,12 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { cn } from "@/lib/utils"
 
 // Initialize PDF.js worker
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`
-
+if (!pdfjs.GlobalWorkerOptions.workerSrc) {
+  pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+    "node_modules/pdfjs-dist/build/pdf.worker.min.js",
+    import.meta.url
+  ).toString();
+}
 interface DocumentViewerProps {
   file: File
   currentTool: AnnotationType
