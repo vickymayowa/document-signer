@@ -23,7 +23,6 @@ export default function CommentPopover({
 
   const handleSave = () => {
     if (comment.trim()) {
-      // Format the comment with markdown-like syntax if formatting is applied
       let formattedComment = comment;
       if (isBold) formattedComment = `**${formattedComment}**`;
       if (isItalic) formattedComment = `*${formattedComment}*`;
