@@ -6,6 +6,16 @@ if (!pdfjs.GlobalWorkerOptions.workerSrc) {
   pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`
 }
 
+// Define interface for PDF metadata info
+interface PDFMetadataInfo {
+  Title?: string
+  Author?: string
+  CreationDate?: string
+  Keywords?: string
+  Subject?: string
+  [key: string]: any
+}
+
 /**
  * Extract metadata from a PDF file
  */
@@ -22,14 +32,15 @@ export async function extractPdfMetadata(file: File): Promise<DocumentMetadata> 
         const metadata = await pdf.getMetadata()
         const pageCount = pdf.numPages
 
-        const info = metadata.info || {}
+        // Cast the info object to our interface
+        const info = (metadata.info as PDFMetadataInfo) || {}
 
         resolve({
           title: info.Title || file.name,
           author: info.Author || undefined,
-          creationDate: info.CreationDate ? parseCreationDate(info.CreationDate as string) : undefined,
+          creationDate: info.CreationDate ? parseCreationDate(info.CreationDate) : undefined,
           pageCount,
-          keywords: info.Keywords ? (info.Keywords as string).split(",").map((k) => k.trim()) : undefined,
+          keywords: info.Keywords ? info.Keywords.split(",").map((k) => k.trim()) : undefined,
           subject: info.Subject || undefined,
         })
       } catch (error) {
