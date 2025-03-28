@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils"
 // Initialize PDF.js worker
 if (!pdfjs.GlobalWorkerOptions.workerSrc) {
   pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-    "node_modules/pdfjs-dist/build/pdf.worker.min.js",
+    "pdfjs-dist/build/pdf.worker.min.js",
     import.meta.url
   ).toString();
 }
